@@ -341,7 +341,7 @@ namespace JLM.NetSocket
 					this.isSending = false;
 				}
 				this.OnChangeState(SocketState.Closed);
-				if (this.Disconnected != null)
+					if (this.Disconnected != null)
 					this.Disconnected(this, new NetSocketDisconnectedEventArgs(reason));
 			}
 			catch (Exception ex)
@@ -648,6 +648,24 @@ namespace JLM.NetSocket
 		#endregion
 	}
 
+	public class NetComm : NetBase 
+	{
+		public NetComm(Socket client) {
+			this.socket = client;
+		}
+		public void Start() {
+			this.socket.ReceiveBufferSize = this.byteBuffer.Length;
+			this.socket.SendBufferSize = this.byteBuffer.Length;
+
+			this.SetKeepAlive ();
+
+			this.OnChangeState (SocketState.Connected);
+			this.OnConnected (this.socket);
+
+			this.Receive ();
+		}
+	}
+
 	public class NetServer : NetBase
 	{
 		#region Events
@@ -770,6 +788,27 @@ namespace JLM.NetSocket
 			{
 				this.OnErrorReceived("Accept", ex);
 			}
+		}
+		#endregion
+
+		#region Accept2
+		/// <summary>Accept the connection request</summary>
+		/// <param name="client">Client socket to accept</param>
+		public NetComm Accept2(Socket client)
+		{
+			try
+			{
+				if (this.state != SocketState.Listening)
+					throw new Exception("Cannot accept2 socket is " + this.state.ToString());
+
+				var newCli = new NetComm(client);
+				return newCli;
+			}
+			catch (Exception ex)
+			{
+				this.OnErrorReceived("Accept2", ex);
+			}
+			return null;
 		}
 		#endregion
 	}
